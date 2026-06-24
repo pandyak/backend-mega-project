@@ -25,10 +25,86 @@ const generateAccessAndRefreshTokens= async(userId)=>
 }
 
 const registerUser = asyncHandler(async (req, res, next) => {
+   //get user details from frontend 
+   //validation -not empty 
+   //check if user already exists from username or email
+   //check for images and check for avatar 
+   //upload them to cloudinary,avatar 
+   //create user object  -create entry in db 
+   //remove password and refresh token from response 
+   //check for user creation 
+   //return response 
 
-   return res.status(200).json({
-      message: "ok"
-   });
+   const {fullname,email,username,password}=req.body
+   console.log("email",email);
+
+   // if(fullname==="")
+   // {
+   //    throw new apiError(400,"fullname is required")
+   // }
+
+   if(
+      [fullname,email,username,password].some((field)=>field?.trim()==="")
+   )
+   {
+      throw new apiError(400,"all fields are  required")
+   }
+
+   User.findOne({
+      $or: [{username},{email}]
+   })
+
+   if(existedUser)
+   {
+      throw new apiError(409,"user with email or username is already exists")
+   }
+
+   const avatarLocalPath=req.files?.avatar[0]?.path;
+   const coverImageLocalPath=req.files?.coverImage[0]?.path
+
+   if(!avatarLocalPath)
+   {
+      throw new apiError(400,"avatar file is required")
+   }
+
+   const avatar=await uploadOnCloudinary(avatarLocalPath)
+   const coverImage=await uploadOnCloudinary(coverImageLocalPath)
+
+   if(!avatar)
+   {
+      throw new apiError(400,"avatar file is required")
+   }
+
+   if(!coverImage)
+   {
+
+   }
+
+  const user=await User.create({
+      fullname,
+      avatar:avatar.url,
+      coverImage: coverImage?.url||"",
+      email,
+      password,
+      username: username.toLowerCase()
+      
+   })
+
+   const createdUser=await User.findById(user._id)
+   .select("-password -refreshToken")
+
+   if(!createUser)
+   {
+      throw new apiError(500,"something went wrong while registering the user")
+   }
+
+   
+   return res.status(201).json(
+      new apiResponse(200,createdUser,"user registered successfully")
+   )
+   // return res.status(200).json({
+   //    message: "ok"
+   // });
 
 });
 
@@ -87,6 +163,10 @@ refreshToken
 "User logged in successfully"
 )
 )
+})
+
+const logoutUser=asyncHandler(async(req,res)=>{
+   
 })
 
 export { registerUser, loginUser };
