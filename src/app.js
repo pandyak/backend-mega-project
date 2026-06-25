@@ -18,6 +18,21 @@ app.use(express.urlencoded({extended:true,limit:"16kb"}))
 app.use(express.static("public"))
 app.use(cookieParser())
 
+// error handler middleware
+app.use((err, req, res, next) => {
+    const statusCode = err.statusCode || 500
+    const message = err.message || "Something went wrong"
+    
+    console.log("ERROR:", err) // shows error in terminal
+    
+    return res.status(statusCode).json({
+        success: false,
+        statusCode,
+        message
+    })
+})
+
+
 //routes
 import userRouter from "./routes/user.routes.js"
 
