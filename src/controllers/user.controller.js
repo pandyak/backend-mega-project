@@ -36,7 +36,7 @@ const registerUser = asyncHandler(async (req, res) => {
    //return response 
 
    const {fullname,email,username,password}=req.body
-    console.log("1. body received:", {fullname, email, username, password})
+   //  console.log("1. body received:", {fullname, email, username, password})
 
    // if(fullname==="")
    // {
@@ -60,8 +60,14 @@ const registerUser = asyncHandler(async (req, res) => {
    }
 
    const avatarLocalPath=req.files?.avatar[0]?.path;
-   const coverImageLocalPath=req.files?.coverImage[0]?.path
-   console.log("2. file paths:", {avatarLocalPath, coverImageLocalPath})
+   // const coverImageLocalPath=req.files?.coverImage[0]?.path
+
+   let coverImageLocalPath;
+   if(req.files && Array.isArray(req.files.coverImage)&&req.files.coverImage.length>0)
+   {
+      coverImageLocalPath=req.files?.coverImage[0].path
+   }
+   // console.log("2. file paths:", {avatarLocalPath, coverImageLocalPath})
 
    if(!avatarLocalPath)
    {
