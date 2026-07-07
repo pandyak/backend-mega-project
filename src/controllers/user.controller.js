@@ -59,14 +59,8 @@ const registerUser = asyncHandler(async (req, res) => {
       throw new apiError(409,"user with email or username is already exists")
    }
 
-   const avatarLocalPath=req.files?.avatar[0]?.path;
-   // const coverImageLocalPath=req.files?.coverImage[0]?.path
-
-   let coverImageLocalPath;
-   if(req.files && Array.isArray(req.files.coverImage)&&req.files.coverImage.length>0)
-   {
-      coverImageLocalPath=req.files?.coverImage[0].path
-   }
+   const avatarLocalPath = req.files?.avatar?.[0]?.path;
+   const coverImageLocalPath = req.files?.coverImage?.[0]?.path;
    // console.log("2. file paths:", {avatarLocalPath, coverImageLocalPath})
 
    if(!avatarLocalPath)
@@ -74,8 +68,10 @@ const registerUser = asyncHandler(async (req, res) => {
       throw new apiError(400,"avatar file is required")
    }
 
-   const avatar=await uploadOnCloudinary(avatarLocalPath)
-   const coverImage=await uploadOnCloudinary(coverImageLocalPath)
+   const avatar = await uploadOnCloudinary(avatarLocalPath)
+   const coverImage = coverImageLocalPath
+      ? await uploadOnCloudinary(coverImageLocalPath)
+      : null
    console.log("3. cloudinary response:", {avatar: avatar?.url, coverImage: coverImage?.url})
 
 
@@ -127,7 +123,11 @@ const loginUser = asyncHandler(async(req,res)=>{
    //password check 
    //access and refresh token 
    //send cookie 
-const {email, username, password} = req.body
+const {email, username, password} = req.body ?? {}
+
+if (!req.body || Object.keys(req.body).length === 0) {
+   throw new apiError(400, "Request body is required");
+}
 
 if(!(username || email)){
 throw new apiError(400,"username or email is required")
@@ -154,8 +154,9 @@ const loggedInUser = await User.findById(user._id)
 .select("-password -refreshToken")
 
 const options = {
-httpOnly:true,
-secure:true
+  httpOnly: true,
+  secure: process.env.NODE_ENV === "production",
+  sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
 }
 
 return res
@@ -190,8 +191,9 @@ const logoutUser=asyncHandler(async(req,res)=>{
 
    )
    const options = {
-httpOnly:true,
-secure:true
+  httpOnly: true,
+  secure: process.env.NODE_ENV === "production",
+  sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
 }
 return res
 .status(200)

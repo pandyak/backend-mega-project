@@ -2,7 +2,7 @@ import { Router } from "express";
 import { registerUser, loginUser,logoutUser } from "../controllers/user.controller.js";
 import { uploadOnCloudinary } from "../utils/cloudinary.js";
 import { upload } from "../middlewares/multer.middleware.js";
-import {verifyJwT} from "../middlewares/auth.middleware.js"
+import { verifyJWT } from "../middlewares/auth.middleware.js";
 
 const router=Router()
 
@@ -38,7 +38,7 @@ router.route("/register").post(
 
     //secure routes
     router.route("/logout").post(
-        verfiyJWT,
+        verifyJWT,
         logoutUser
     )
 
