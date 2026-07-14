@@ -90,9 +90,9 @@ const registerUser = asyncHandler(async (req, res) => {
       throw new apiError(400,"avatar file is required")
    }
 
-   if(!coverImage)
+   if(coverImageLocalPath && !coverImage)
    {
-
+      throw new apiError(400,"error while uploading cover image to cloudinary")
    }
 
   const user=await User.create({
@@ -139,12 +139,16 @@ if (!req.body || Object.keys(req.body).length === 0) {
    throw new apiError(400, "Request body is required");
 }
 
-if(!(username || email)){
-throw new apiError(400,"username or email is required")
+if (!(username || email)) {
+   throw new apiError(400, "username or email is required")
+}
+
+if (!password || !password.toString().trim()) {
+   throw new apiError(400, "password is required")
 }
 
 const user = await User.findOne({
-$or:[{username},{email}]
+   $or: [{ username }, { email }]
 })
 
 if(!user){
@@ -262,8 +266,7 @@ const refreshAccessToken=asyncHandler(async(req,res)=>{
       new apiResponse(
          200,
          {accessToken,refreshToken:newRefreshToken},
-         "access and refresh token generted successfully"
-         
+         "access and refresh token generated successfully"
       )
     )
    }
@@ -279,8 +282,16 @@ const refreshAccessToken=asyncHandler(async(req,res)=>{
 const changeCurrentPassword=asyncHandler(async(req,res)=>{
    const {oldPassword,newPassword}=req.body
 
-  const user= await User.findById(req.user._id)
-  const isPasswordCorrect= await user.isPasswordCorrect(oldPassword)
+   if(!oldPassword || !newPassword){
+      throw new apiError(400,"old password and new password are required")
+   }
+
+   const user= await User.findById(req.user._id)
+   if(!user){
+      throw new apiError(404,"User not found")
+   }
+
+   const isPasswordCorrect= await user.isPasswordCorrect(oldPassword)
    if(!isPasswordCorrect)
    {
       throw new apiError(400,"invalid old password")
@@ -395,6 +406,89 @@ const updateUserCoverImage=asyncHandler(async(req,res)=>{
    )
 })
 
+
+const getUserChannelProfile=asyncHandler(async(req,res)=>{
+
+   const username=req.params.username?.trim();
+
+   if(!username)
+   {
+      throw new apiError(400,"username is missing")
+   }
+
+   const currentUserId = req.user?._id || null;
+
+   const channel=await User.aggregate([
+      {
+         $match:{
+            username:username.toLowerCase()
+         }
+      },
+
+   {
+      $lookup:{
+         from:"subscriptions",
+         localField:"_id",
+         foreignField:"channel",
+         as:"subscribers"
+      }
+   },
+
+   {
+      $lookup:{
+         from:"subscriptions",
+         localField:"_id",
+         foreignField:"subscriber",
+         as:"subscribersTo"
+      }
+   },
+   {
+      $addFields:{
+         subscribersCount:{
+            $size:"$subscribers"
+         },
+         channelSubscribedToCount:{
+            $size:"$subscribersTo"
+         },
+         isSubscribed:{
+            $cond:{
+               if:{$in:[currentUserId,"$subscribers.subscriber"]},
+               then:true,
+               else:false
+            }
+         }
+      }
+   },
+
+   {
+      $project:{
+         fullname:1,
+         username:1,
+         subscribersCount:1,
+         channelSubscribedToCount:1,
+         isSubscribed:1,
+         avatar:1,
+         coverImage:1,
+         email:1,
+
+
+      }
+   }
+   ])
+
+      if(!channel || channel.length === 0)
+      {
+         throw new apiError(404,"channel not found")
+      }
+
+      return res.status(200).json(
+         new apiResponse(200,channel[0],"channel profile fetched successfully")
+
+      )
+
+
+})
+
 export { registerUser,loginUser,logoutUser,
    refreshAccessToken,
    changeCurrentPassword,
@@ -402,6 +496,8 @@ export { registerUser,loginUser,logoutUser,
    updateAccountDetails,
    updateUserAvatar,
    updateUserCoverImage,
+   getUserChannelProfile,
+
 
 
 

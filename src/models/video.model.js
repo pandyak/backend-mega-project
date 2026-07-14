@@ -1,12 +1,10 @@
-import mongoose from 'mongoose';
+import mongoose, { Schema } from 'mongoose';
 import mongooseAggregatepaginate from "mongoose-aggregate-paginate-v2";
 
 const videoSchema=new Schema({
     videoFile:{
         type:String,//cloudniary url 
         required:true,
-        
-        
     },
 
     thumbnail:{
@@ -54,9 +52,9 @@ const videoSchema=new Schema({
 
 },
 {
-    timeStamps:true
+    timestamps:true
 })
 
 videoSchema.plugin(mongooseAggregatepaginate);
 
-export const Video=mongoose.model("video",videoSchema)
+export const Video=mongoose.model("Video",videoSchema)
